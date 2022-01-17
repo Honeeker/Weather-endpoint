@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 
 namespace Infrastructure.Api
 {
-     internal class InternalControllerFeatureProvider : ControllerFeatureProvider
+    internal class InternalControllerFeatureProvider : ControllerFeatureProvider
     {
         protected override bool IsController(TypeInfo typeInfo)
         {

@@ -16,9 +16,29 @@ namespace ModularEndpoint.Modules.Weather.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<MeteorologicalDataDto>>> GetAllAsync()
+        public async Task<ActionResult<IReadOnlyList<MeteorologicalDataDto>>> GetAllAsync(
+            [FromQuery(Name = "stationId")] IReadOnlyList<string> stations,
+            [FromQuery(Name = "year")] IReadOnlyList<int> years,
+            [FromQuery(Name = "month")] IReadOnlyList<int> months
+        )
         {
-            return Ok(await _weatherService.GetAllAsync());
+            IReadOnlyList<MeteorologicalDataDto> weather = await _weatherService.GetAllAsync(stations, years, months);
+            if(weather.Count == 0)
+            {
+                return NoContent();
+            }
+            return Ok(weather);
+        }
+
+        [HttpGet("years")]
+        public async Task<ActionResult<IReadOnlyList<int>>> GetAllYears()
+        {
+            var years = await _weatherService.GetYearsAsync();
+            if(years.Count == 0)
+            {
+                return NoContent();
+            }
+            return Ok(years);
         }
     }
 }

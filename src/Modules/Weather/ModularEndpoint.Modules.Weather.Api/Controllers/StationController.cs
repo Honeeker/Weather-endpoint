@@ -15,9 +15,6 @@ namespace ModularEndpoint.Modules.Weather.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<StationDto>>> GetAll()
-        {
-            return Ok(await _stationService.GetAllAsync());
-        }
+        public async Task<ActionResult<IReadOnlyList<StationDto>>> GetAll() => Ok(await _stationService.GetAllAsync());
     }
 }

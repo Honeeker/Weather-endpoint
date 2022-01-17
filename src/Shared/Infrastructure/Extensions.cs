@@ -13,7 +13,7 @@ namespace Shared.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {  
-             services.AddControllers()
+            services.AddControllers()
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Add(new InternalControllerFeatureProvider());

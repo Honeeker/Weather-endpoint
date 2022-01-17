@@ -13,6 +13,15 @@ namespace ModularEndpoint.Bootstrapper
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(policy =>{
+                policy.AddPolicy("AllowAll", options => {
+                    options
+                        .AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+
             services.AddWeatherModule();
             services.AddImportModule();
             services.AddInfrastructure();
@@ -20,9 +29,14 @@ namespace ModularEndpoint.Bootstrapper
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseInfrastructure();
+
             app.UseRouting();
+
+            app.UseCors("AllowAll");
+
             app.UseWeatherModule();
             app.UseImportModule();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

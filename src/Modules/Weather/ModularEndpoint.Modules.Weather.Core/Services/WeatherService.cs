@@ -27,11 +27,23 @@ namespace ModularEndpoint.Modules.Weather.Core.Services
             => new()
             {
                 Id = meteorologicalData.Id,
-                StationName = meteorologicalData.StationName,
+                StationId = meteorologicalData.StationId,
                 Date = meteorologicalData.Date,
                 MaximumDailyTemperature = meteorologicalData.MaximumDailyTemperature,
                 MinimumDailyTemperature = meteorologicalData.MinimumDailyTemperature,
                 DailyTemperature = meteorologicalData.DailyTemperature
             };
+
+        public async Task<IReadOnlyList<MeteorologicalDataDto>> GetAllAsync(IReadOnlyList<string> stations, IReadOnlyList<int> years, IReadOnlyList<int> months)
+        {
+           var meteorologicalData = await _weatherRepository.GetAllAsync(stations, years, months);
+
+           return meteorologicalData.Select(Map<MeteorologicalDataDto>).ToList();
+        }
+
+        public async Task<IReadOnlyList<int>> GetYearsAsync()
+        {
+            return await _weatherRepository.GetYearsAsync();
+        }
     }
 }

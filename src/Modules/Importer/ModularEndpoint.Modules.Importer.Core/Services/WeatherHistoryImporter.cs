@@ -7,55 +7,62 @@ using System.Text;
 using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
-using CsvHelper.Configuration.Attributes;
 using Microsoft.Extensions.Logging;
+using ModularEndpoint.Modules.Importer.Core.CsvMappings;
 using ModularEndpoint.Modules.Importer.Core.Entities;
+using ModularEndpoint.Modules.Importer.Core.Models;
 
 namespace ModularEndpoint.Modules.Importer.Core.Services
 {
     public class WeatherHistoryImporter : IWeatherHistoryImporter
     {
         private readonly IWeatherHistoryService _weatherHistoryService;
-        public WeatherHistoryImporter(IWeatherHistoryService weatherHistoryService)
+        private readonly ILogger<WeatherHistoryImporter> _logger;
+        public WeatherHistoryImporter(IWeatherHistoryService weatherHistoryService, ILogger<WeatherHistoryImporter> logger)
         {
             _weatherHistoryService = weatherHistoryService;
+            _logger = logger;
         }
         public async Task ImportMeteorologicalData(string directoryPath)
         {
-            List<Task<List<ClimateFormat>>> tasks = PrepareReadFileForClimateDataTasks(directoryPath);
+            _logger.LogInformation("Preparing tasks to read file");
+            List<Task<List<BaseClimateFormat>>> tasks = PrepareReadFileForClimateDataTasks(directoryPath);
+            _logger.LogInformation($"Files to import: {tasks.Count} ");
             while(tasks.Count > 0)
             {
                 Task taskFinished = await Task.WhenAny(tasks);
                 if(taskFinished.Status == TaskStatus.RanToCompletion)
                 {
-                    List<MeteorologicalData> meteorologicalDatas =  GetMeteorologicalDatas(((Task<List<ClimateFormat>>) taskFinished).Result);
+                    List<MeteorologicalData> meteorologicalDatas =  GetMeteorologicalDatas(((Task<List<BaseClimateFormat>>) taskFinished).Result);
                     await _weatherHistoryService.AddRangeAsync(meteorologicalDatas);
-                    tasks.Remove(((Task<List<ClimateFormat>>) taskFinished));
+                    tasks.Remove(((Task<List<BaseClimateFormat>>) taskFinished));
+                    _logger.LogInformation($"Left {tasks.Count} tasks.");
                 }
             }
+            _logger.LogInformation("Import done");
         }
-        private MeteorologicalData MapToMeteorologicalData(ClimateFormat climateFormat)
+        private MeteorologicalData MapToMeteorologicalData(BaseClimateFormat BaseClimateFormat)
         {
             return new MeteorologicalData()
             {
-                StationName = climateFormat.StationName,
-                Date = DateTime.Parse(string.Format("{0}-{1}-{2}", climateFormat.Year, climateFormat.Month.ToString().PadLeft(2,'0'), climateFormat.Day.ToString().PadLeft(2, '0'))),
-                DailyTemperature = climateFormat.DailyTemperature,
-                MaximumDailyTemperature = climateFormat.MaximumDailyTemperature,
-                MinimumDailyTemperature = climateFormat.MinimumDailyTemperature
+                StationId = Convert.ToInt32(BaseClimateFormat.Id),
+                Date = DateTime.Parse(string.Format("{0}-{1}-{2}", BaseClimateFormat.Year, BaseClimateFormat.Month.ToString().PadLeft(2,'0'), BaseClimateFormat.Day.ToString().PadLeft(2, '0'))),
+                DailyTemperature = BaseClimateFormat.DailyTemperature,
+                MaximumDailyTemperature = BaseClimateFormat.MaximumDailyTemperature,
+                MinimumDailyTemperature = BaseClimateFormat.MinimumDailyTemperature
             };
            
         }
-        private List<Task<List<ClimateFormat>>> PrepareReadFileForClimateDataTasks(string directoryPath)
+        private List<Task<List<BaseClimateFormat>>> PrepareReadFileForClimateDataTasks(string directoryPath)
         {
-            List<Task<List<ClimateFormat>>> tasks = new List<Task<List<ClimateFormat>>>();
+            List<Task<List<BaseClimateFormat>>> tasks = new List<Task<List<BaseClimateFormat>>>();
             foreach(string filePath in Directory.EnumerateFiles(directoryPath))
             {
                 tasks.Add(ReadFileForClimateData(filePath));
             }
             return tasks;
         }
-        private async Task<List<ClimateFormat>> ReadFileForClimateData(string filePath)
+        private async Task<List<BaseClimateFormat>> ReadFileForClimateData(string filePath)
         {
             using(TextReader reader = new StreamReader(filePath, Encoding.GetEncoding(1250)))
             {
@@ -65,57 +72,21 @@ namespace ModularEndpoint.Modules.Importer.Core.Services
                 };
                 using(var csvReader = new CsvReader(reader, csvConfiguration))
                 { 
-                    List<ClimateFormat> climateFormats = new List<ClimateFormat>();
+                    csvReader.Context.RegisterClassMap<BaseClimateFormatMap>();
+
+                    List<BaseClimateFormat> BaseClimateFormats = new List<BaseClimateFormat>();
                     while(await csvReader.ReadAsync())
                     {
-                        climateFormats.Add(csvReader.GetRecord<ClimateFormat>());
+                      
+                        BaseClimateFormats.Add(csvReader.GetRecord<BaseClimateFormat>());
                     }
-                    return climateFormats;
+                    return BaseClimateFormats;
                 }
             }
         }
-        private List<MeteorologicalData> GetMeteorologicalDatas(List<ClimateFormat> climateFormats)
+        private List<MeteorologicalData> GetMeteorologicalDatas(List<BaseClimateFormat> baseClimateFormats)
         {
-            return climateFormats.Select(data => MapToMeteorologicalData(data)).ToList();
-        }
-        private class ClimateFormat
-        { 
-            [Index(0)]
-            public string Id { get; set; }
-            [Index(1)]
-            public string StationName { get; set; }
-            [Index(2)]
-            public int Year { get; set; }
-            [Index(3)]
-            public int Month { get; set; }
-            [Index(4)]
-            public int Day { get; set; }
-            [Index(5)]
-            public double MaximumDailyTemperature { get; set; }
-            [Index(6)]
-            public string StatusMaxT { get; set; }
-            [Index(7)]
-            public double MinimumDailyTemperature { get; set; }
-            [Index(8)]
-            public string StatusMinT { get; set; }
-            [Index(9)]
-            public double DailyTemperature { get; set; }
-            [Index(10)]
-            public string StatusDT { get; set; }
-            [Index(11)]
-            public double MinimumNearGroundTemperature { get; set; }
-            [Index(12)]
-            public string StatusMNGT { get; set; }
-            [Index(13)]
-            public double DailyPrecipitation { get; set; }
-            [Index(14)]
-            public string StatusDP { get; set; }
-            [Index(15)]
-            public string PrecipitationType { get; set; }
-            [Index(16)]
-            public double SnowHeigth { get; set; }
-            [Index(17)]
-            public string StatusSH { get; set; }
+            return baseClimateFormats.Select(data => MapToMeteorologicalData(data)).ToList();
         }
     }
 }

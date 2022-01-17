@@ -9,7 +9,7 @@ namespace ModularEndpoint.Modules.Weather.Core.DAL.Configurations
         public void Configure(EntityTypeBuilder<MeteorologicalData> builder)
         {
              builder
-                .ToTable("climate")
+                .ToTable("weather")
                 .HasKey(p => p.Id);
             builder
                 .Property( p => p.Id)
@@ -18,8 +18,8 @@ namespace ModularEndpoint.Modules.Weather.Core.DAL.Configurations
                 .Property( p => p.Date)
                 .HasColumnName("date");
             builder
-                .Property( p => p.StationName)
-                .HasColumnName("station_name");
+                .Property( p => p.StationId)
+                .HasColumnName("station_id");
             builder
                 .Property( p => p.MaximumDailyTemperature)
                 .HasColumnName("maximum_daily_temperature");
