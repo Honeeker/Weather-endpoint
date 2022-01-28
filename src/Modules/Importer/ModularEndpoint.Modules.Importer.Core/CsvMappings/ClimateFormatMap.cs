@@ -1,4 +1,5 @@
 using CsvHelper.Configuration;
+using ModularEndpoint.Modules.Importer.Core.Models;
 
 namespace ModularEndpoint.Modules.Importer.Core.CsvMappings
 {
